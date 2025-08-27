@@ -1,0 +1,50 @@
+# Limit Order Book in Rust
+
+A performant, **deterministic**, and **single-threaded** Limit Order Book (LOB) implemented in Rust with minimal overhead—designed for clarity, speed, and correctness.
+
+## Overview
+
+A Limit Order Book is the beating heart of any exchange infrastructure. It must process massive volumes of order events—additions, cancellations, and executions—while providing efficient insights, such as best bid/ask and partial volumes. 
+For perspective, feeds like Nasdaq TotalView ITCH can exceed **100,000 order events per second**.
+
+## Core Design Goals
+
+- **Deterministic per-symbol matching** – no randomness in execution order.
+- **Low latency operations** – every core operation in O(1) or O(log M), where M ≪ N (number of orders).
+- Clean API: intuitive methods for adding, canceling, and querying book state.
+
+## Data Structures
+
+This implementation stores all active orders, bids, and asks on a per-symbol basis using:
+
+- **Skip lists** — maintain ordered price levels (bids and asks incrementally sorted).
+- **Hash maps** — O(1) access to orders and price-level nodes by ID or price.
+- **Best bid / Best ask pointers** — O(1) retrieval of top-of-book quotes.
+
+### Complexity Summary
+
+| Operation                   | Complexity                     |
+|----------------------------|--------------------------------|
+| Add (new price level)      | O(log M)                       |
+| Add (existing level)       | O(1)                           |
+| Cancel                     | O(1)                           |
+| Execute (inside book)      | O(1)                           |
+| GetBestBid / GetBestAsk    | O(1)                           |
+| GetVolumeAtLimit           | O(1)                           |
+
+> _M = number of price levels in the book (far smaller than the total order count “N”)
+
+## Why Skip Lists + Hash Maps?
+
+The original tree-and-list strategy (binary tree of price limits + doubly linked lists of orders) is elegant. Here’s how we’ve adapted it:
+
+- **Skip list** replaces tree + linked list combos, providing ordered traversal and fast insertion/deletion.
+- **Hash maps** allow instant lookup of limits (by price) and orders (by ID).
+- **Best pointers** keep track of the top-of-book and remain valid with minimal maintenance.
+
+Leaves you with deterministic matching and real-time book access without sacrificing performance.
+
+## Notes & Credits
+
+This implementation is inspired by classic LOB design patterns — tree+linked-list structures, hash tables, and sparse arrays — but refactored in Rust using modern, efficient data structures.
+

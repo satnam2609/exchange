@@ -1,0 +1,7 @@
+version: '1.0'
+services:
+  enigne:
+  sequencer:
+  order_manager:
+  balancer:
+  client:

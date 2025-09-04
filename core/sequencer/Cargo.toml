@@ -1,0 +1,11 @@
+[package]
+name = "sequencer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.99"
+bincode = "1.3.3"
+memmap= { path="../memmap" }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1.47.1", features = ["full"] }

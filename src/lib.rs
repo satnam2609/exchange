@@ -48,7 +48,7 @@ impl LimitOrderBook {
     /// assert!(limit_order_book.best_ask.is_none());
     /// assert!(limit_order_book.best_bid.is_none());
     /// // create a raw order and then pass to the order book for insertion
-    /// let raw_order=lob::order::RawOrder{ seq_id:"1".into(),order_id:"12121".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"12121".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
     ///
     /// limit_order_book.insert(raw_order);
     ///
@@ -109,7 +109,7 @@ impl LimitOrderBook {
     /// This method returns the total volume at particular limit price.
     /// ```rust
     /// let mut limit_order_book= lob::LimitOrderBook::from(String::from("1"));
-    /// let raw_order=lob::order::RawOrder{ seq_id:"1".into(),order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
     ///
     /// limit_order_book.insert(raw_order);
     /// let depth=limit_order_book.depth(lob::order::Side::BID,1000.11);
@@ -132,7 +132,7 @@ impl LimitOrderBook {
     // For now I have to figure out what must be returned.
     ///```rust
     /// let mut book= lob::LimitOrderBook::from(String::from("BOOK"));
-    /// let raw_order=lob::order::RawOrder{ seq_id:"1".into(),order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
     /// book.insert(raw_order);
     ///
     /// let depth=book.depth(lob::order::Side::BID,1000.11);
@@ -206,6 +206,46 @@ impl LimitOrderBook {
             // emit event as Cancelled.
         };
     }
+
+    /// This method is used for updating the best orders
+    /// ```rust
+    /// // creating lob and inserting dummy order
+    /// let mut lob=lob::LimitOrderBook::from(String::from("BOOK"));
+    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// lob.insert(raw_order);
+    ///
+    /// // whoever has the limit order book can update the best order.
+    /// // updating best bid order.
+    /// lob.update_order(Side::ASK);
+    /// // similarly, updating best ask order.
+    /// lob.update_order(Side::BID);
+    /// ```
+    pub fn update_best(&mut self, side: Side) {
+        match side {
+            Side::ASK => self.update_ask(),
+            Side::BID => self.update_bid(),
+        }
+    }
+
+    /// This method will grab the first limit node from the [`Side::ASK`]'s skip list
+    /// and get the `head` pointer from the limit node and mark it as the best ask order.
+    fn update_ask(&mut self) {
+        if let Some((_, limit)) = self.ask_list.front() {
+            if let Some(head) = limit.borrow().head.clone() {
+                self.best_ask = Some(head);
+            }
+        }
+    }
+
+    /// This method will grab the last limit node from the [`Side::BID`]'s skip list
+    /// and get the `head` pointer from the limit node and mark it as the best ask order.
+    fn update_bid(&mut self) {
+        if let Some((_, limit)) = self.bid_list.back() {
+            if let Some(head) = limit.borrow().head.clone() {
+                self.best_bid = Some(head);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -220,7 +260,7 @@ mod tests {
     fn insertion() {
         let mut lob = create_lob();
         let raw_order = RawOrder {
-            seq_id: "1".into(),
+            seq_id: 1,
             order_id: "ORDER1".into(),
             quote: "BTCETH".into(),
             price: 100.10,
@@ -244,7 +284,7 @@ mod tests {
         let mut lob = create_lob();
         for i in 0..10 {
             let raw_order = RawOrder {
-                seq_id: format!("{:?}", i),
+                seq_id: i,
                 order_id: format!("ORDER{:?}", i),
                 quote: "BTCETH".into(),
                 price: 100.10,
@@ -271,7 +311,7 @@ mod tests {
         let mut lob = create_lob();
         for i in 0..10 {
             let raw_order = RawOrder {
-                seq_id: format!("{:?}", i),
+                seq_id: i,
                 order_id: format!("ORDER{:?}", i),
                 quote: "BTCETH".into(),
                 price: 100.10 + i as f64,
@@ -295,7 +335,7 @@ mod tests {
         let mut lob = create_lob();
 
         let raw_order = RawOrder {
-            seq_id: "1".into(),
+            seq_id: 1,
             order_id: "ORDER1".into(),
             quote: "BTCETH".into(),
             price: 100.10,
@@ -329,7 +369,7 @@ mod tests {
 
         for i in 0..10 {
             let raw_order = RawOrder {
-                seq_id: format!("{:?}", i),
+                seq_id: i,
                 order_id: format!("ORDER{:?}", i),
                 quote: "BTCETH".into(),
                 price: 100.10,

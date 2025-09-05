@@ -6,10 +6,9 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use ordered_float::OrderedFloat;
 use skiplist::SkipMap;
 
-use crate::{
-    limit::Limit,
-    order::{Order, RawOrder, Side},
-};
+use crate::{limit::Limit, order::Order};
+
+use core_utils::{RawOrder, Side};
 
 /// This struct holds the core logic for managing the pending orders
 /// or the orders that are currently not processed by the matching enigne.
@@ -48,7 +47,7 @@ impl LimitOrderBook {
     /// assert!(limit_order_book.best_ask.is_none());
     /// assert!(limit_order_book.best_bid.is_none());
     /// // create a raw order and then pass to the order book for insertion
-    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"12121".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// let raw_order=core_utils::RawOrder{ seq_id:1,order_id:"12121".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side:core_utils::Side::BID, order_type:core_utils::OrderType::LIMIT };
     ///
     /// limit_order_book.insert(raw_order);
     ///
@@ -109,10 +108,10 @@ impl LimitOrderBook {
     /// This method returns the total volume at particular limit price.
     /// ```rust
     /// let mut limit_order_book= lob::LimitOrderBook::from(String::from("1"));
-    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// let raw_order=core_utils::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side:core_utils::Side::BID, order_type:core_utils::OrderType::LIMIT };
     ///
     /// limit_order_book.insert(raw_order);
-    /// let depth=limit_order_book.depth(lob::order::Side::BID,1000.11);
+    /// let depth=limit_order_book.depth(core_utils::Side::BID,1000.11);
     /// assert!(depth.is_some());
     /// assert_eq!(depth.unwrap(),10);
     /// ```
@@ -132,17 +131,17 @@ impl LimitOrderBook {
     // For now I have to figure out what must be returned.
     ///```rust
     /// let mut book= lob::LimitOrderBook::from(String::from("BOOK"));
-    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// let raw_order=core_utils::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side:core_utils::Side::BID, order_type:core_utils::OrderType::LIMIT };
     /// book.insert(raw_order);
     ///
-    /// let depth=book.depth(lob::order::Side::BID,1000.11);
+    /// let depth=book.depth(core_utils::Side::BID,1000.11);
     /// assert!(depth.is_some());
     /// assert_eq!(depth.unwrap(),10);
     /// // removing the order now
     /// book.remove("order_id_10232".into());
     /// // since the order has been removed now, so the total volume
     /// // within that limit node must be reduced to the intial volume.
-    /// let depth=book.depth(lob::order::Side::BID,1000.11);
+    /// let depth=book.depth(core_utils::Side::BID,1000.11);
     /// assert!(depth.is_none());
     /// ```
     //
@@ -211,14 +210,14 @@ impl LimitOrderBook {
     /// ```rust
     /// // creating lob and inserting dummy order
     /// let mut lob=lob::LimitOrderBook::from(String::from("BOOK"));
-    /// let raw_order=lob::order::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side: lob::order::Side::BID, order_type:lob::order::OrderType::LIMIT };
+    /// let raw_order=core_utils::RawOrder{ seq_id:1,order_id:"order_id_10232".into(),quote:"BTCINR".into(),price:1000.11, size: 10,side:core_utils::Side::BID, order_type:core_utils::OrderType::LIMIT };
     /// lob.insert(raw_order);
     ///
     /// // whoever has the limit order book can update the best order.
     /// // updating best bid order.
-    /// lob.update_order(Side::ASK);
+    /// lob.update_best(core_utils::Side::ASK);
     /// // similarly, updating best ask order.
-    /// lob.update_order(Side::BID);
+    /// lob.update_best(core_utils::Side::BID);
     /// ```
     pub fn update_best(&mut self, side: Side) {
         match side {
@@ -251,7 +250,7 @@ impl LimitOrderBook {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use core_utils::OrderType;
     fn create_lob() -> LimitOrderBook {
         LimitOrderBook::from(String::from("LIMITORDERBOOK"))
     }
@@ -266,7 +265,7 @@ mod tests {
             price: 100.10,
             size: 10,
             side: Side::ASK,
-            order_type: order::OrderType::LIMIT,
+            order_type: OrderType::LIMIT,
         };
 
         lob.insert(raw_order);
@@ -290,7 +289,7 @@ mod tests {
                 price: 100.10,
                 size: 10,
                 side: Side::ASK,
-                order_type: order::OrderType::LIMIT,
+                order_type: OrderType::LIMIT,
             };
 
             lob.insert(raw_order);
@@ -317,7 +316,7 @@ mod tests {
                 price: 100.10 + i as f64,
                 size: 10,
                 side: Side::ASK,
-                order_type: order::OrderType::LIMIT,
+                order_type: OrderType::LIMIT,
             };
 
             lob.insert(raw_order);
@@ -341,7 +340,7 @@ mod tests {
             price: 100.10,
             size: 10,
             side: Side::ASK,
-            order_type: order::OrderType::LIMIT,
+            order_type: OrderType::LIMIT,
         };
 
         lob.insert(raw_order);
@@ -375,7 +374,7 @@ mod tests {
                 price: 100.10,
                 size: 10,
                 side: Side::ASK,
-                order_type: order::OrderType::LIMIT,
+                order_type: OrderType::LIMIT,
             };
 
             lob.insert(raw_order);

@@ -10,8 +10,6 @@ use memmap2::{MmapMut, MmapOptions};
 
 const MAGIC: u64 = 0x4D514D50524F4451; // magic number
 
-pub mod engseq;
-pub mod seqman;
 
 /// Layout in the mmap file:
 /// [ Header (aligned) ] [ slot0 ][ slot1 ]...[ slotN-1 ]

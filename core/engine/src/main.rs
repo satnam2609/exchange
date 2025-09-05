@@ -1,12 +1,8 @@
-use lob::order::{OrderType, RawOrder, Side};
+use core_utils::{ExecuteMessage, Execution, RawOrder, Side};
 use lob::*;
-use memmap::{engseq::RawSequencedOrder, MmapQueue};
+use memmap::MmapQueue;
 use std::thread::sleep;
 use std::time::Duration;
-
-use crate::execution::{ExecuteMessage, Execution};
-
-pub mod execution;
 
 fn tmp_path(name: &str) -> std::path::PathBuf {
     std::env::temp_dir().join(format!("mmap_queue_{}.dat", name))
@@ -16,17 +12,16 @@ fn tmp_path(name: &str) -> std::path::PathBuf {
 async fn main() -> anyhow::Result<()> {
     let mut inbound_queue = MmapQueue::open(tmp_path("inbound"))?;
     let mut outbound_queue = MmapQueue::open(tmp_path("outbound"))?;
-    let (tx, rx) = crossbeam::channel::unbounded::<RawSequencedOrder>();
+    let (tx, rx) = crossbeam::channel::unbounded::<RawOrder>();
 
     std::thread::spawn(move || {
         let mut lob = LimitOrderBook::from(String::from("Book"));
         for mut seq_order in rx {
             let mut outorder_execution = ExecuteMessage::new(seq_order.seq_id, Execution::INSERTED);
-            let side = if seq_order.side { Side::BID } else { Side::ASK };
-            let other_side = if seq_order.side {
-                lob.best_ask.clone()
-            } else {
-                lob.best_bid.clone()
+            let side = seq_order.side;
+            let other_side = match seq_order.side {
+                Side::BID => lob.best_ask.clone(),
+                Side::ASK => lob.best_bid.clone(),
             };
 
             match other_side {
@@ -82,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
 
     loop {
         while let Ok(Some(s)) = inbound_queue.dequeue() {
-            let msg: RawSequencedOrder = bincode::deserialize(&s).unwrap();
+            let msg: RawOrder = bincode::deserialize(&s).unwrap();
             let _ = tx.send(msg);
         }
 

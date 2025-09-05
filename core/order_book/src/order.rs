@@ -4,48 +4,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
-use serde::{Deserialize, Serialize};
-use memmap::engseq::RawSequencedOrder;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize,Deserialize)]
-pub enum Side {
-    ASK,
-    BID,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize,Deserialize)]
-pub enum OrderType {
-    LIMIT,
-    MARKET,
-}
-#[derive(Debug, Clone, Serialize,Deserialize)]
-pub struct RawOrder {
-    pub seq_id: u128,
-    pub order_id: String,
-    pub quote: String,
-    pub price: f64,
-    pub size: u64,
-    pub side: Side,
-    pub order_type: OrderType,
-}
-
-
-impl From<RawSequencedOrder> for RawOrder{
-    fn from(value: RawSequencedOrder) -> Self {
-        let side= if value.side {Side::BID} else {Side::ASK};
-        let order_type= if value.order_type { OrderType::LIMIT} else {OrderType::MARKET};
-
-        Self{
-            seq_id:value.seq_id,
-            order_id:value.order_id,
-            quote:value.quote,
-            price:value.price,
-            size:value.size,
-            side,
-            order_type,
-        }
-    }
-}
+use core_utils::{OrderType, RawOrder, Side};
 
 #[derive(Clone)]
 pub struct Order {
@@ -89,4 +48,3 @@ impl From<RawOrder> for Order {
         }
     }
 }
-

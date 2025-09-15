@@ -10,3 +10,5 @@ memmap= { path="../memmap" }
 core_utils= { path="../core_utils" }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1.47.1", features = ["full"] }
+env_logger = "0.11.8"
+log = "0.4.28"

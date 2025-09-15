@@ -3,9 +3,7 @@ use core_utils::RawOrder;
 use std::thread::sleep;
 use std::time::Duration;
 
-use crate::matching_engine::MatchingEngine;
-
-pub mod matching_engine;
+use matching_engine::MatchingEngine;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

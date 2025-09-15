@@ -4,7 +4,7 @@ use crossbeam::channel::Receiver;
 use lob::LimitOrderBook;
 use memmap::MmapQueue;
 
-fn tmp_path(name: &str) -> std::path::PathBuf {
+pub fn tmp_path(name: &str) -> std::path::PathBuf {
     std::env::temp_dir().join(format!("mmap_queue_{}.dat", name))
 }
 
@@ -14,10 +14,14 @@ pub struct MatchingEngine {
     pub outbound_queue: *mut MmapQueue,
 }
 
+
+
 impl MatchingEngine {
     pub fn new(quote: String) -> anyhow::Result<Self> {
-        let inbound = MmapQueue::open(tmp_path(&format!("{:?}-inbound", quote)))?;
-        let outbound = MmapQueue::open(tmp_path(&format!("{:?}-outbound", quote)))?;
+        let inbound = MmapQueue::open(tmp_path(&format!("{}-inbound", quote)))?;
+        let outbound = MmapQueue::open(tmp_path(&format!("{}-outbound", quote)))?;
+
+        
         Ok(Self {
             quote: quote.clone(),
             inbound_queue: Box::into_raw(Box::new(inbound)),
@@ -27,6 +31,14 @@ impl MatchingEngine {
 
     pub fn get_inbound(&self)->anyhow::Result<&mut MmapQueue>{
         if let Some(queue)=unsafe{self.inbound_queue.as_mut()}{
+            return Ok(queue)
+        }
+
+        Err(anyhow!("Inbound queue is null pointer"))
+    }
+
+    pub fn get_outbound(&self)->anyhow::Result<&mut MmapQueue>{
+        if let Some(queue)=unsafe{self.outbound_queue.as_mut()}{
             return Ok(queue)
         }
 

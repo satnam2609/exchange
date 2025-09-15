@@ -1,47 +1,40 @@
-use anyhow::Ok;
-use bincode;
-use memmap::MmapQueue;
+use anyhow::{anyhow, Ok};
+use core_utils::OrderValue;
+use log::info;
+use crate::seq::Sequencer;
 
+pub mod seq;
 
-use std::result::Result;
-use std::thread::sleep;
-use std::time::Duration;
+fn get_quote() -> anyhow::Result<String> {
+    let args = std::env::args().collect::<Vec<String>>();
 
-use core_utils::{RawOrder,Side,OrderType,ExecuteMessage};
-
-fn tmp_path(name: &str) -> std::path::PathBuf {
-    std::env::temp_dir().join(format!("mmap_queue_{}.dat", name))
+    if args.len() == 2 {
+        let quote=args[1].clone();
+        return Ok(quote);
+    } else {
+        return Err(anyhow!("Only one argument is required"));
+    }
 }
-
-fn size_of_raworder() -> usize {
-    std::mem::size_of::<RawOrder>()
-}
-
-
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let mut inbound_queue = MmapQueue::create(tmp_path("inbound"), 1024, size_of_raworder())?;
-    let mut outbound_queue = MmapQueue::create(tmp_path("outbound"), 1024, size_of_raworder())?;
+    let quote = get_quote()?;
+    env_logger::init();
+    info!("Starting Sequencer with Quote {quote}");
+    let mut sequencer = Sequencer::new(&quote)?;
 
-    let raw_order = RawOrder::default()
-        .with_seq_id(1000)
-        .with_order_id("ORDER1000".into())
-        .with_quote("BTCETH".into())
-        .with_price(10000.99)
-        .with_size(12)
-        .with_side(Side::BID)
-        .with_order_type(OrderType::LIMIT)
-        .to_owned();
-
-    let _ = inbound_queue.enqueue(&bincode::serialize(&raw_order).unwrap());
-
-    sleep(Duration::from_millis(10000));
-
-    if let Result::Ok(Some(v)) = outbound_queue.dequeue() {
-        let event = bincode::deserialize::<ExecuteMessage>(&v).unwrap();
-        println!("Event: {:?}",event);
-    }
-
+    let order_value = OrderValue {
+        order_id: "ORDER".into(),
+        quote: "BTCETH".into(),
+        price: 100.10,
+        size: 10,
+        side: core_utils::Side::ASK,
+        order_type: core_utils::OrderType::LIMIT,
+    };
+    unsafe { sequencer.inbound_manager.as_mut() }
+        .unwrap()
+        .enqueue(&bincode::serialize(&order_value).unwrap())
+        .unwrap();
+    sequencer.run()?;
     Ok(())
 }

@@ -109,8 +109,8 @@ pub enum Execution {
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct ExecuteMessage {
-    seq_id: u128,         // Sequence ID of the processed order/raw_order.
-    execution: Execution, // Event
+    pub seq_id: u128,         // Sequence ID of the processed order/raw_order.
+    pub execution: Execution, // Event
 }
 
 impl ExecuteMessage {
@@ -124,5 +124,32 @@ impl ExecuteMessage {
 
     pub fn set_execution(&mut self, execution: Execution) {
         self.execution = execution;
+    }
+}
+
+// ---------- RAW ORDER MESSAGE ----------
+/// This struct will be used between order manager and the sequencer to
+/// access the order data
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderValue {
+    pub quote: String,
+    pub order_id: String,
+    pub price: f64,
+    pub size: u64,
+    pub side: Side,
+    pub order_type: OrderType,
+}
+
+impl OrderValue {
+    pub fn into_raw(&self, seq: u128) -> RawOrder {
+        RawOrder::default()
+            .with_seq_id(seq)
+            .with_order_id(self.order_id.clone())
+            .with_quote(self.quote.to_owned())
+            .with_price(self.price)
+            .with_size(self.size)
+            .with_side(self.side)
+            .with_order_type(self.order_type)
+            .to_owned()
     }
 }
